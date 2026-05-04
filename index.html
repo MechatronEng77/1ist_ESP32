@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Real-Time Dashboard</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        h1 { color: #333; font-size: 1.2rem; margin-bottom: 1rem; }
+        .value { font-size: 3rem; font-weight: bold; color: #007bff; margin: 10px 0; }
+        .unit { font-size: 1rem; color: #777; }
+        .status { font-size: 0.8rem; margin-top: 20px; padding: 5px 10px; border-radius: 20px; display: inline-block; }
+        .online { background: #e6ffed; color: #28a745; }
+        .offline { background: #ffeef0; color: #d73a49; }
+    </style>
+</head>
+<body> 
+
+    <div class="card">
+        <h1>Sensor Reading</h1>
+        <div class="value" id="sensor-value">--</div>
+        <div class="unit" id="unit-label">Loading...</div>
+        <div id="status-indicator" class="status offline">Connecting to Broker...</div>
+    </div> 
+
+    <script>
+        // --- CONFIGURATION ---
+        const BROKER_URL = 'wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt'; 
+2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt
+        const OPTIONS = {
+            username: 'MPU9060',
+            password: 'Mpu6090mpu',
+            clientId: 'web_client_' + Math.random().toString(16).substr(2, 8)
+        };
+        const TOPIC = 'sensors/reading'; // Must match what your ESP32 publishes to 
+
+        // --- MQTT LOGIC ---
+        const client = mqtt.connect(BROKER_URL, OPTIONS); 
+
+        const valueDisplay = document.getElementById('sensor-value');
+        const statusIndicator = document.getElementById('status-indicator'); 
+
+        client.on('connect', () => {
+            console.log('Connected to HiveMQ!');
+            statusIndicator.innerText = 'Online';
+            statusIndicator.className = 'status online';
+            client.subscribe(TOPIC);
+        }); 
+
+        client.on('message', (topic, message) => {
+            // This is like an Interrupt Service Routine (ISR)
+            // It runs every time a new message arrives
+            const data = message.toString();
+            valueDisplay.innerText = data;
+            console.log("Received:", data);
+        }); 
+
+        client.on('error', (err) => {
+            console.error('Connection error: ', err);
+            statusIndicator.innerText = 'Connection Error';
+            statusIndicator.className = 'status offline';
+        });
+    </script>
+</body>
+</html>
