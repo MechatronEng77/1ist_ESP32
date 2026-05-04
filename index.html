@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPU9250 Live Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f1923 0%, #1a2733 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        .dashboard {
+            width: 100%;
+            max-width: 900px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            margin-bottom: 5px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            animation: pulse 2s infinite;
+        }
+        .status.disconnected {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4444;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: linear-gradient(145deg, #1e3040 0%, #1a2733 100%);
+            border: 1px solid #2a3f52;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #00d4ff;
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
+        }
+        .card .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .card .label {
+            color: #8a9bae;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        .card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00d4ff;
+            transition: all 0.2s ease;
+        }
+        .card .unit {
+            font-size: 0.5em;
+            color: #5a7a8a;
+            margin-left: 5px;
+        }
+        .info {
+            text-align: center;
+            color: #5a7a8a;
+            font-size: 0.8em;
+            margin-top: 20px;
+        }
+        .info a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🎯 MPU9250 Live Dashboard</h1>
+            <span class="status disconnected" id="status">● DISCONNECTED</span>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <div class="icon">📊</div>
+                <div class="label">Accelerometer X</div>
+                <div class="value" id="ax">0.00<span class="unit">g</span></div>
+            </div>
+            <div class="card">
+                <div class="icon">📊</div>
+                <div class="label">Accelerometer Y</div>
+                <div class="value" id="ay">0.00<span class="unit">g</span></div>
+            </div>
+            <div class="card">
+                <div class="icon">📊</div>
+                <div class="label">Accelerometer Z</div>
+                <div class="value" id="az">0.00<span class="unit">g</span></div>
+            </div>
+            <div class="card">
+                <div class="icon">🔄</div>
+                <div class="label">Gyroscope X</div>
+                <div class="value" id="gx">0.00<span class="unit">°/s</span></div>
+            </div>
+            <div class="card">
+                <div class="icon">🔄</div>
+                <div class="label">Gyroscope Y</div>
+                <div class="value" id="gy">0.00<span class="unit">°/s</span></div>
+            </div>
+            <div class="card">
+                <div class="icon">🔄</div>
+                <div class="label">Gyroscope Z</div>
+                <div class="value" id="gz">0.00<span class="unit">°/s</span></div>
+            </div>
+        </div>
+        <div class="info">
+            Powered by ESP32 + HiveMQ Cloud | Deployed on Vercel
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script>
+        const broker = 'wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt';
+        const topic = 'mpu9250/sensor';
+        const username = 'MPU9060';
+        const password = 'Mpu6090mpu';
+        
+        const statusEl = document.getElementById('status');
+        
+        const client = mqtt.connect(broker, {
+            username: username,
+            password: password,
+            clean: true,
+            reconnectPeriod: 5000
+        });
+        
+        client.on('connect', () => {
+            console.log('Connected to HiveMQ Cloud');
+            statusEl.textContent = '● CONNECTED';
+            statusEl.className = 'status connected';
+            client.subscribe(topic);
+        });
+        
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                document.getElementById('ax').innerHTML = data.ax.toFixed(2) + '<span class="unit">g</span>';
+                document.getElementById('ay').innerHTML = data.ay.toFixed(2) + '<span class="unit">g</span>';
+                document.getElementById('az').innerHTML = data.az.toFixed(2) + '<span class="unit">g</span>';
+                document.getElementById('gx').innerHTML = data.gx.toFixed(2) + '<span class="unit">°/s</span>';
+                document.getElementById('gy').innerHTML = data.gy.toFixed(2) + '<span class="unit">°/s</span>';
+                document.getElementById('gz').innerHTML = data.gz.toFixed(2) + '<span class="unit">°/s</span>';
+            } catch (e) {
+                console.error('Parse error:', e);
+            }
+        });
+        
+        client.on('error', (err) => {
+            console.error('MQTT Error:', err);
+            statusEl.textContent = '● ERROR';
+            statusEl.className = 'status disconnected';
+        });
+        
+        client.on('close', () => {
+            statusEl.textContent = '● DISCONNECTED';
+            statusEl.className = 'status disconnected';
+        });
+    </script>
+</body>
+</html>
