@@ -3,298 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MPU9250 Dashboard</title>
+    <title>MPU9250 Kalman Dashboard</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{
-            font-family:Arial,sans-serif;
-            background:#0a0e17;
-            padding:8px;
-            color:#e0e0e0;
+            font-family:'Segoe UI',sans-serif;
+            background:linear-gradient(135deg,#0a0e17,#1a1f2b);
+            min-height:100vh;
+            padding:10px;
+            color:#fff;
         }
-        .dash{max-width:600px;margin:0 auto}
-        .header{text-align:center;margin-bottom:8px}
-        .header h1{font-size:1.2em;color:#00d4ff}
-        .status{font-size:0.65em;padding:2px 8px;border-radius:8px}
-        .status.on{background:rgba(0,255,0,0.15);color:#0f0}
+        .dash{max-width:1000px;margin:0 auto}
+        .header{text-align:center;margin-bottom:10px}
+        .header h1{font-size:1.3em;color:#00d4ff;margin-bottom:3px}
+        .status{font-size:0.7em;padding:2px 10px;border-radius:10px}
+        .status.on{background:rgba(0,255,0,0.15);color:#0f0;animation:pulse 2s infinite}
         .status.off{background:rgba(255,0,0,0.15);color:#f44}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
         .card{
-            background:#151a24;
-            border:1px solid #252d3a;
+            background:linear-gradient(135deg,#1a1f2b,#222935);
+            border:1px solid #2a3040;
             border-radius:8px;
             padding:8px;
-            margin-bottom:6px;
         }
-        .card-title{color:#6a7a8a;font-size:0.6em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-        .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
-        .grid2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-        .cell{text-align:center;padding:3px}
-        .cell .clabel{font-size:0.5em;color:#4a5a6a}
-        .cell .cval{font-size:0.8em;color:#00d4ff;font-weight:bold}
-        .cell .cunit{font-size:0.45em;color:#3a4a5a}
-        .cell.gold .cval{color:#ffd700}
-        .info-line{display:flex;justify-content:space-between;margin-top:4px;font-size:0.55em}
-        .info-line .ilabel{color:#5a6a7a}
-        .info-line .ival{color:#00d4ff;font-weight:bold}
-        .angle-row{display:flex;justify-content:space-around;margin-top:4px}
-        .angle{text-align:center}
-        .angle .aname{font-size:0.5em;color:#5a6a7a}
-        .angle .aval{font-size:0.7em;font-weight:bold}
-        canvas{
-            width:100%;
-            height:250px;
-            display:block;
-            background:#151a24;
-            border:1px solid #252d3a;
-            border-radius:8px;
-        }
-        .footer{text-align:center;color:#2a3a4a;font-size:0.5em;margin-top:4px}
+        .card-title{color:#7a8a9a;font-size:0.6em;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+        .sensor-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+        .mini-card{text-align:center;padding:4px}
+        .mini-card .label{font-size:0.55em;color:#5a6a7a}
+        .mini-card .value{font-size:0.85em;color:#00d4ff;font-weight:bold}
+        .mini-card .unit{font-size:0.5em;color:#3a4a5a}
+        
+        .info-row{display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding:2px 8px}
+        .info-label{font-size:0.55em;color:#5a6a7a}
+        .info-value{font-size:0.65em;color:#00d4ff;font-weight:bold}
+        
+        .dist-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+        .dist-box{text-align:center;padding:4px;background:rgba(255,215,0,0.05);border-radius:5px}
+        .dist-box .dlabel{font-size:0.5em;color:#6a7a8a;margin-bottom:2px}
+        .dist-box .dval{font-size:0.75em;color:#00d4ff;font-weight:bold}
+        .dist-box.total .dval{color:#ffd700}
+        
+        .angle-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px}
+        .angle-box{text-align:center;padding:4px;background:rgba(255,255,255,0.02);border-radius:5px}
+        .angle-box .alabel{font-size:0.5em;color:#6a7a8a;margin-bottom:2px}
+        .angle-box .aval{font-size:0.8em;font-weight:bold}
+        
+        .footer{text-align:center;color:#3a4a5a;font-size:0.55em;margin-top:6px}
     </style>
 </head>
 <body>
     <div class="dash">
         <div class="header">
-            <h1>MPU9250 Live Data</h1>
-            <span class="status off" id="st">DISCONNECTED</span>
+            <h1>MPU9250 Kalman Dashboard</h1>
+            <span class="status off" id="st">● DISCONNECTED</span>
         </div>
         
-        <div class="grid2">
+        <div class="main-grid">
             <div class="card">
                 <div class="card-title">Acceleration</div>
-                <div class="grid3">
-                    <div class="cell"><div class="clabel">X</div><div class="cval" id="ax">0.00</div><div class="cunit">m/s²</div></div>
-                    <div class="cell"><div class="clabel">Y</div><div class="cval" id="ay">0.00</div><div class="cunit">m/s²</div></div>
-                    <div class="cell"><div class="clabel">Z</div><div class="cval" id="az">0.00</div><div class="cunit">m/s²</div></div>
+                <div class="sensor-grid">
+                    <div class="mini-card"><div class="label">X</div><div class="value" id="ax">0.0000</div><div class="unit">m/s²</div></div>
+                    <div class="mini-card"><div class="label">Y</div><div class="value" id="ay">0.0000</div><div class="unit">m/s²</div></div>
+                    <div class="mini-card"><div class="label">Z</div><div class="value" id="az">0.0000</div><div class="unit">m/s²</div></div>
                 </div>
-                <div class="info-line"><span class="ilabel">Resultant</span><span class="ival" id="ra">0.00 m/s²</span></div>
+                <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="ra">0.0000 m/s²</span></div>
             </div>
+            
             <div class="card">
                 <div class="card-title">Gyroscope</div>
-                <div class="grid3">
-                    <div class="cell"><div class="clabel">X</div><div class="cval" id="gx">0.00</div><div class="cunit">°/s</div></div>
-                    <div class="cell"><div class="clabel">Y</div><div class="cval" id="gy">0.00</div><div class="cunit">°/s</div></div>
-                    <div class="cell"><div class="clabel">Z</div><div class="cval" id="gz">0.00</div><div class="cunit">°/s</div></div>
+                <div class="sensor-grid">
+                    <div class="mini-card"><div class="label">X</div><div class="value" id="gx">0.0000</div><div class="unit">°/s</div></div>
+                    <div class="mini-card"><div class="label">Y</div><div class="value" id="gy">0.0000</div><div class="unit">°/s</div></div>
+                    <div class="mini-card"><div class="label">Z</div><div class="value" id="gz">0.0000</div><div class="unit">°/s</div></div>
                 </div>
-                <div class="info-line"><span class="ilabel">Resultant</span><span class="ival" id="rg">0.00 °/s</span></div>
+                <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="rg">0.0000 °/s</span></div>
             </div>
+            
             <div class="card">
                 <div class="card-title">Velocity</div>
-                <div class="grid3">
-                    <div class="cell"><div class="clabel">X</div><div class="cval" id="vx">0.00</div><div class="cunit">m/s</div></div>
-                    <div class="cell"><div class="clabel">Y</div><div class="cval" id="vy">0.00</div><div class="cunit">m/s</div></div>
-                    <div class="cell"><div class="clabel">Z</div><div class="cval" id="vz">0.00</div><div class="cunit">m/s</div></div>
+                <div class="sensor-grid">
+                    <div class="mini-card"><div class="label">X</div><div class="value" id="vx">0.0000</div><div class="unit">m/s</div></div>
+                    <div class="mini-card"><div class="label">Y</div><div class="value" id="vy">0.0000</div><div class="unit">m/s</div></div>
+                    <div class="mini-card"><div class="label">Z</div><div class="value" id="vz">0.0000</div><div class="unit">m/s</div></div>
                 </div>
-                <div class="info-line"><span class="ilabel">Resultant</span><span class="ival" id="rv">0.00 m/s</span></div>
+                <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="rv">0.0000 m/s</span></div>
             </div>
+            
             <div class="card">
-                <div class="card-title">Distance & Orientation</div>
-                <div class="grid2">
-                    <div class="cell gold"><div class="clabel">Total</div><div class="cval" id="dist">0.00</div><div class="cunit">m</div></div>
-                    <div class="cell"><div class="clabel">X</div><div class="cval" id="dx">0.00</div><div class="cunit">m</div></div>
-                    <div class="cell"><div class="clabel">Y</div><div class="cval" id="dy">0.00</div><div class="cunit">m</div></div>
-                    <div class="cell"><div class="clabel">Z</div><div class="cval" id="dz">0.00</div><div class="cunit">m</div></div>
+                <div class="card-title">Distance Traveled</div>
+                <div class="dist-grid">
+                    <div class="dist-box total"><div class="dlabel">Total Distance</div><div class="dval" id="dist">0.0000 m</div></div>
+                    <div class="dist-box"><div class="dlabel">X Axis</div><div class="dval" id="dx">0.0000 m</div></div>
+                    <div class="dist-box"><div class="dlabel">Y Axis</div><div class="dval" id="dy">0.0000 m</div></div>
+                    <div class="dist-box"><div class="dlabel">Z Axis</div><div class="dval" id="dz">0.0000 m</div></div>
                 </div>
-                <div class="angle-row">
-                    <div class="angle"><div class="aname">Pitch</div><div class="aval" id="pitch" style="color:#ff6b6b">0°</div></div>
-                    <div class="angle"><div class="aname">Roll</div><div class="aval" id="roll" style="color:#51cf66">0°</div></div>
-                    <div class="angle"><div class="aname">Yaw</div><div class="aval" id="yaw" style="color:#339af0">0°</div></div>
+                <div class="card-title" style="margin-top:8px">Orientation</div>
+                <div class="angle-grid">
+                    <div class="angle-box"><div class="alabel">Pitch</div><div class="aval" id="pitch" style="color:#ff6b6b">0.0°</div></div>
+                    <div class="angle-box"><div class="alabel">Roll</div><div class="aval" id="roll" style="color:#51cf66">0.0°</div></div>
+                    <div class="angle-box"><div class="alabel">Yaw</div><div class="aval" id="yaw" style="color:#339af0">0.0°</div></div>
                 </div>
             </div>
         </div>
         
-        <canvas id="c3d"></canvas>
-        <div class="footer">ESP32 → Kalman → HiveMQ</div>
+        <div class="footer">ESP32 → Kalman Filter → HiveMQ → Vercel</div>
     </div>
     
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script>
-        // Simple 3D engine
-        const canvas = document.getElementById('c3d');
-        const ctx = canvas.getContext('2d');
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = 250;
-        
-        let pitch = 0, roll = 0, yaw = 0;
-        
-        function rotateX(x, y, z, angle) {
-            const c = Math.cos(angle), s = Math.sin(angle);
-            return {x: x, y: y*c - z*s, z: y*s + z*c};
-        }
-        function rotateY(x, y, z, angle) {
-            const c = Math.cos(angle), s = Math.sin(angle);
-            return {x: x*c + z*s, y: y, z: -x*s + z*c};
-        }
-        function rotateZ(x, y, z, angle) {
-            const c = Math.cos(angle), s = Math.sin(angle);
-            return {x: x*c - y*s, y: x*s + y*c, z: z};
-        }
-        
-        function project(x, y, z) {
-            const scale = 200 / (z + 5);
-            return {
-                x: canvas.width/2 + x * scale,
-                y: canvas.height/2 - y * scale
-            };
-        }
-        
-        function drawLine(p1, p2, color) {
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-        }
-        
-        function drawBox(w, h, d, color) {
-            const verts = [
-                [-w/2,-h/2,-d/2], [ w/2,-h/2,-d/2], [ w/2, h/2,-d/2], [-w/2, h/2,-d/2],
-                [-w/2,-h/2, d/2], [ w/2,-h/2, d/2], [ w/2, h/2, d/2], [-w/2, h/2, d/2]
-            ];
-            
-            let rverts = verts.map(v => {
-                let p = rotateX(v[0], v[1], v[2], pitch);
-                p = rotateY(p.x, p.y, p.z, yaw);
-                p = rotateZ(p.x, p.y, p.z, roll);
-                return project(p.x, p.y, p.z);
-            });
-            
-            const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-            edges.forEach(e => drawLine(rverts[e[0]], rverts[e[1]], color));
-        }
-        
-        function drawArrow() {
-            const tip = rotateX(0.8, 0, 0, pitch);
-            const tp = rotateY(tip.x, tip.y, tip.z, yaw);
-            const tp2 = rotateZ(tp.x, tp.y, tp.z, roll);
-            const pTip = project(tp2.x, tp2.y, tp2.z);
-            
-            const base = rotateX(0.4, 0, 0, pitch);
-            const bp = rotateY(base.x, base.y, base.z, yaw);
-            const bp2 = rotateZ(bp.x, bp.y, bp.z, roll);
-            const pBase = project(bp2.x, bp2.y, bp2.z);
-            
-            drawLine(pBase, pTip, '#ff4444');
-        }
-        
-        function drawGrid() {
-            for (let i = -2; i <= 2; i++) {
-                const p1 = project(i, 0, -2);
-                const p2 = project(i, 0, 2);
-                drawLine(p1, p2, '#1a2030');
-                const p3 = project(-2, 0, i);
-                const p4 = project(2, 0, i);
-                drawLine(p3, p4, '#1a2030');
-            }
-        }
-        
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#151a24';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            drawGrid();
-            drawBox(1, 0.1, 0.4, '#00d4ff');
-            drawArrow();
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '10px Arial';
-            ctx.fillText('3D Orientation View', 10, 15);
-            
-            requestAnimationFrame(render);
-        }
-        render();
-        
-        window.addEventListener('resize', () => {
-            canvas.width = canvas.parentElement.clientWidth;
+        const client = mqtt.connect('wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt', {
+            username: 'MPU9060',
+            password: 'Mpu6090mpu',
+            clean: true,
+            reconnectPeriod: 3000,
+            connectTimeout: 30000,
+            clientId: 'web_' + Math.random().toString(16).substr(2, 8)
         });
         
-        // MQTT
-        const broker = 'wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt';
-        const client = new WebSocket(broker);
-        let connected = false;
-        
-        client.onopen = function() {
-            connected = true;
-            document.getElementById('st').textContent = 'CONNECTED';
+        client.on('connect', () => {
+            document.getElementById('st').textContent = '● CONNECTED';
             document.getElementById('st').className = 'status on';
-            
-            // MQTT CONNECT packet
-            const connectPacket = new Uint8Array([
-                0x10, 0x20, // CONNECT
-                0x00, 0x04, 'M'.charCodeAt(0), 'Q'.charCodeAt(0), 'T'.charCodeAt(0), 'T'.charCodeAt(0),
-                0x04, // Protocol level 4
-                0xC2, // Clean session, username, password
-                0x00, 0x3C, // Keepalive 60s
-                0x00, 0x07, 'M'.charCodeAt(0), 'P'.charCodeAt(0), 'U'.charCodeAt(0), '9'.charCodeAt(0), '0'.charCodeAt(0), '6'.charCodeAt(0), '0'.charCodeAt(0),
-                0x00, 0x0B, 'M'.charCodeAt(0), 'p'.charCodeAt(0), 'u'.charCodeAt(0), '6'.charCodeAt(0), '0'.charCodeAt(0), '9'.charCodeAt(0), '0'.charCodeAt(0), 'm'.charCodeAt(0), 'p'.charCodeAt(0), 'u'.charCodeAt(0)
-            ]);
-            client.send(connectPacket.buffer);
-            
-            // Subscribe
-            setTimeout(() => {
-                const subPacket = new Uint8Array([
-                    0x82, 0x10,
-                    0x00, 0x01,
-                    0x00, 0x0E, 'm'.charCodeAt(0), 'p'.charCodeAt(0), 'u'.charCodeAt(0), '9'.charCodeAt(0), '2'.charCodeAt(0), '5'.charCodeAt(0), '0'.charCodeAt(0), '/'.charCodeAt(0), 's'.charCodeAt(0), 'e'.charCodeAt(0), 'n'.charCodeAt(0), 's'.charCodeAt(0), 'o'.charCodeAt(0), 'r'.charCodeAt(0),
-                    0x00
-                ]);
-                client.send(subPacket.buffer);
-            }, 500);
-        };
+            client.subscribe('mpu9250/sensor');
+        });
         
-        client.onmessage = function(event) {
-            if (event.data instanceof ArrayBuffer) {
-                const bytes = new Uint8Array(event.data);
-                // MQTT PUBLISH packet (0x30)
-                if (bytes[0] === 0x30) {
-                    let pos = 2 + bytes[1];
-                    if (bytes[1] > 127) pos++;
-                    pos += 2;
-                    const topicLen = (bytes[pos-2] << 8) | bytes[pos-1];
-                    pos += topicLen;
-                    const payload = new TextDecoder().decode(bytes.slice(pos));
-                    
-                    try {
-                        const d = JSON.parse(payload);
-                        
-                        document.getElementById('ax').textContent = d.ax.toFixed(2);
-                        document.getElementById('ay').textContent = d.ay.toFixed(2);
-                        document.getElementById('az').textContent = d.az.toFixed(2);
-                        document.getElementById('gx').textContent = d.gx.toFixed(2);
-                        document.getElementById('gy').textContent = d.gy.toFixed(2);
-                        document.getElementById('gz').textContent = d.gz.toFixed(2);
-                        document.getElementById('ra').textContent = d.res_accel.toFixed(2) + ' m/s²';
-                        document.getElementById('rg').textContent = d.res_gyro.toFixed(2) + ' °/s';
-                        document.getElementById('vx').textContent = d.vx.toFixed(2);
-                        document.getElementById('vy').textContent = d.vy.toFixed(2);
-                        document.getElementById('vz').textContent = d.vz.toFixed(2);
-                        document.getElementById('rv').textContent = d.res_vel.toFixed(2) + ' m/s';
-                        document.getElementById('dist').textContent = d.dist.toFixed(2);
-                        document.getElementById('dx').textContent = d.dx.toFixed(2);
-                        document.getElementById('dy').textContent = d.dy.toFixed(2);
-                        document.getElementById('dz').textContent = d.dz.toFixed(2);
-                        document.getElementById('pitch').textContent = d.pitch.toFixed(1) + '°';
-                        document.getElementById('roll').textContent = d.roll.toFixed(1) + '°';
-                        document.getElementById('yaw').textContent = d.yaw.toFixed(1) + '°';
-                        
-                        pitch = d.pitch * Math.PI / 180;
-                        roll = d.roll * Math.PI / 180;
-                        yaw = d.yaw * Math.PI / 180;
-                    } catch(e) {}
-                }
-            }
-        };
+        client.on('message', (topic, message) => {
+            try {
+                const d = JSON.parse(message.toString());
+                
+                document.getElementById('ax').textContent = d.ax.toFixed(4);
+                document.getElementById('ay').textContent = d.ay.toFixed(4);
+                document.getElementById('az').textContent = d.az.toFixed(4);
+                document.getElementById('gx').textContent = d.gx.toFixed(4);
+                document.getElementById('gy').textContent = d.gy.toFixed(4);
+                document.getElementById('gz').textContent = d.gz.toFixed(4);
+                document.getElementById('ra').textContent = d.res_accel.toFixed(4) + ' m/s²';
+                document.getElementById('rg').textContent = d.res_gyro.toFixed(4) + ' °/s';
+                document.getElementById('vx').textContent = d.vx.toFixed(4);
+                document.getElementById('vy').textContent = d.vy.toFixed(4);
+                document.getElementById('vz').textContent = d.vz.toFixed(4);
+                document.getElementById('rv').textContent = d.res_vel.toFixed(4) + ' m/s';
+                document.getElementById('dist').textContent = d.dist.toFixed(4) + ' m';
+                document.getElementById('dx').textContent = d.dx.toFixed(4) + ' m';
+                document.getElementById('dy').textContent = d.dy.toFixed(4) + ' m';
+                document.getElementById('dz').textContent = d.dz.toFixed(4) + ' m';
+                document.getElementById('pitch').textContent = d.pitch.toFixed(1) + '°';
+                document.getElementById('roll').textContent = d.roll.toFixed(1) + '°';
+                document.getElementById('yaw').textContent = d.yaw.toFixed(1) + '°';
+            } catch(e) {}
+        });
         
-        client.onclose = function() {
-            connected = false;
-            document.getElementById('st').textContent = 'DISCONNECTED';
+        client.on('error', () => {
+            document.getElementById('st').textContent = '● ERROR';
             document.getElementById('st').className = 'status off';
-        };
+        });
         
-        client.onerror = function() {
-            document.getElementById('st').textContent = 'ERROR';
+        client.on('close', () => {
+            document.getElementById('st').textContent = '● DISCONNECTED';
             document.getElementById('st').className = 'status off';
-        };
+        });
     </script>
 </body>
 </html>
