@@ -105,116 +105,145 @@
                 <canvas id="canvas3d"></canvas>
             </div>
         </div>
-        <div class="footer">ESP32_MPU: By Eng.Ahmed</div>
+        <div class="footer">ESP32 → Kalman Filter → HiveMQ → Vercel</div>
     </div>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script>
-        // MQTT Connection
-        const c=mqtt.connect('wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt',{
-            username:'MPU9060',
-            password:'Mpu6090mpu',
-            reconnectPeriod:3000
-        });
-        c.on('connect',()=>{
-            document.getElementById('st').textContent='● CONNECTED';
-            document.getElementById('st').className='status on';
-            c.subscribe('mpu9250/sensor');
-        });
-        c.on('close',()=>{
-            document.getElementById('st').textContent='● DISCONNECTED';
-            document.getElementById('st').className='status off';
-        });
-
-        // Three.js 3D Scene
-        const canvas=document.getElementById('canvas3d');
-        const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
-        renderer.setSize(canvas.parentElement.clientWidth,280);
-        const scene=new THREE.Scene();
-        const camera=new THREE.PerspectiveCamera(45,canvas.parentElement.clientWidth/280,0.1,100);
-        camera.position.set(3,3,5);
-        camera.lookAt(0,0,0);
-
-        // Lighting
-        scene.add(new THREE.AmbientLight(0x404060,1));
-        const light=new THREE.DirectionalLight(0xffffff,1);
-        light.position.set(5,5,5);
-        scene.add(light);
-
-        // 3D Object (drone-like shape)
-        const group=new THREE.Group();
+        console.log('Starting MQTT connection...');
         
-        // Body
-        const body=new THREE.Mesh(
-            new THREE.BoxGeometry(1,0.15,0.6),
-            new THREE.MeshPhongMaterial({color:0x00d4ff,specular:0x111111,shininess:30})
+        const brokerUrl = 'wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt';
+        
+        const client = mqtt.connect(brokerUrl, {
+            username: 'MPU9060',
+            password: 'Mpu6090mpu',
+            clean: true,
+            reconnectPeriod: 3000,
+            connectTimeout: 30000,
+            clientId: 'web_' + Math.random().toString(16).substr(2, 8)
+        });
+        
+        client.on('connect', function() {
+            console.log('Connected to HiveMQ!');
+            document.getElementById('st').textContent = '● CONNECTED';
+            document.getElementById('st').className = 'status on';
+            client.subscribe('mpu9250/sensor', function(err) {
+                if (!err) {
+                    console.log('Subscribed to mpu9250/sensor');
+                } else {
+                    console.error('Subscribe error:', err);
+                }
+            });
+        });
+        
+        client.on('message', function(topic, message) {
+            try {
+                const d = JSON.parse(message.toString());
+                console.log('Data received:', d);
+                
+                document.getElementById('ax').textContent = d.ax.toFixed(4);
+                document.getElementById('ay').textContent = d.ay.toFixed(4);
+                document.getElementById('az').textContent = d.az.toFixed(4);
+                document.getElementById('gx').textContent = d.gx.toFixed(4);
+                document.getElementById('gy').textContent = d.gy.toFixed(4);
+                document.getElementById('gz').textContent = d.gz.toFixed(4);
+                document.getElementById('ra').textContent = d.res_accel.toFixed(4);
+                document.getElementById('rg').textContent = d.res_gyro.toFixed(4);
+                document.getElementById('vx').textContent = d.vx.toFixed(4);
+                document.getElementById('vy').textContent = d.vy.toFixed(4);
+                document.getElementById('vz').textContent = d.vz.toFixed(4);
+                document.getElementById('rv').textContent = d.res_vel.toFixed(4);
+                document.getElementById('dist').textContent = d.dist.toFixed(4);
+                document.getElementById('dist_xyz').textContent = 'X:' + d.dx.toFixed(3) + ' Y:' + d.dy.toFixed(3) + ' Z:' + d.dz.toFixed(3);
+                document.getElementById('pitch').textContent = d.pitch.toFixed(1) + '°';
+                document.getElementById('roll').textContent = d.roll.toFixed(1) + '°';
+                document.getElementById('yaw').textContent = d.yaw.toFixed(1) + '°';
+                
+                // Update 3D
+                if (typeof THREE !== 'undefined' && typeof group !== 'undefined') {
+                    group.rotation.x = THREE.MathUtils.degToRad(d.pitch);
+                    group.rotation.y = THREE.MathUtils.degToRad(d.yaw);
+                    group.rotation.z = THREE.MathUtils.degToRad(-d.roll);
+                }
+            } catch(e) {
+                console.error('Parse error:', e);
+            }
+        });
+        
+        client.on('error', function(err) {
+            console.error('MQTT Error:', err);
+            document.getElementById('st').textContent = '● ERROR';
+            document.getElementById('st').className = 'status off';
+        });
+        
+        client.on('close', function() {
+            console.log('MQTT Disconnected');
+            document.getElementById('st').textContent = '● DISCONNECTED';
+            document.getElementById('st').className = 'status off';
+        });
+        
+        client.on('reconnect', function() {
+            console.log('Reconnecting...');
+            document.getElementById('st').textContent = '● RECONNECTING';
+            document.getElementById('st').className = 'status off';
+        });
+        
+        // Three.js Setup
+        console.log('Setting up 3D scene...');
+        const canvas = document.getElementById('canvas3d');
+        const renderer = new THREE.WebGLRenderer({canvas: canvas, alpha: true, antialias: true});
+        renderer.setSize(canvas.parentElement.clientWidth, 280);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, canvas.parentElement.clientWidth / 280, 0.1, 100);
+        camera.position.set(3, 3, 5);
+        camera.lookAt(0, 0, 0);
+        
+        scene.add(new THREE.AmbientLight(0x404060, 1));
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 5, 5);
+        scene.add(light);
+        
+        const group = new THREE.Group();
+        
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 0.15, 0.6),
+            new THREE.MeshPhongMaterial({color: 0x00d4ff, specular: 0x111111, shininess: 30})
         );
         group.add(body);
-
-        // Arms
-        const armGeo=new THREE.BoxGeometry(0.1,0.05,1.2);
-        const armMat=new THREE.MeshPhongMaterial({color:0x0088cc,specular:0x111111,shininess:30});
-        const arm1=new THREE.Mesh(armGeo,armMat); group.add(arm1);
-        const arm2=new THREE.Mesh(armGeo,armMat); arm2.rotation.y=Math.PI/2; group.add(arm2);
-
-        // Direction indicator
-        const arrow=new THREE.Mesh(
-            new THREE.ConeGeometry(0.1,0.4,8),
-            new THREE.MeshPhongMaterial({color:0xff4444})
+        
+        const armGeo = new THREE.BoxGeometry(0.1, 0.05, 1.2);
+        const armMat = new THREE.MeshPhongMaterial({color: 0x0088cc, specular: 0x111111, shininess: 30});
+        const arm1 = new THREE.Mesh(armGeo, armMat); group.add(arm1);
+        const arm2 = new THREE.Mesh(armGeo, armMat); arm2.rotation.y = Math.PI/2; group.add(arm2);
+        
+        const arrow = new THREE.Mesh(
+            new THREE.ConeGeometry(0.1, 0.4, 8),
+            new THREE.MeshPhongMaterial({color: 0xff4444})
         );
-        arrow.position.set(0.6,0,0);
-        arrow.rotation.z=-Math.PI/2;
+        arrow.position.set(0.6, 0, 0);
+        arrow.rotation.z = -Math.PI/2;
         group.add(arrow);
-
+        
         scene.add(group);
-
-        // Grid
-        const grid=new THREE.GridHelper(5,20,0x2a3040,0x1a1f2b);
+        
+        const grid = new THREE.GridHelper(5, 20, 0x2a3040, 0x1a1f2b);
         scene.add(grid);
-
-        function animate(){
+        
+        function animate() {
             requestAnimationFrame(animate);
-            renderer.render(scene,camera);
+            renderer.render(scene, camera);
         }
         animate();
-
-        window.addEventListener('resize',()=>{
-            const w=canvas.parentElement.clientWidth;
-            renderer.setSize(w,280);
-            camera.aspect=w/280;
+        
+        window.addEventListener('resize', function() {
+            const w = canvas.parentElement.clientWidth;
+            renderer.setSize(w, 280);
+            camera.aspect = w / 280;
             camera.updateProjectionMatrix();
         });
-
-        // MQTT Message Handler
-        c.on('message',(t,m)=>{
-            try{
-                const d=JSON.parse(m.toString());
-                
-                // Update values
-                document.getElementById('ax').textContent=d.ax.toFixed(4);
-                document.getElementById('ay').textContent=d.ay.toFixed(4);
-                document.getElementById('az').textContent=d.az.toFixed(4);
-                document.getElementById('gx').textContent=d.gx.toFixed(4);
-                document.getElementById('gy').textContent=d.gy.toFixed(4);
-                document.getElementById('gz').textContent=d.gz.toFixed(4);
-                document.getElementById('ra').textContent=d.res_accel.toFixed(4);
-                document.getElementById('rg').textContent=d.res_gyro.toFixed(4);
-                document.getElementById('vx').textContent=d.vx.toFixed(4);
-                document.getElementById('vy').textContent=d.vy.toFixed(4);
-                document.getElementById('vz').textContent=d.vz.toFixed(4);
-                document.getElementById('rv').textContent=d.res_vel.toFixed(4);
-                document.getElementById('dist').textContent=d.dist.toFixed(4);
-                document.getElementById('dist_xyz').textContent=`X:${d.dx.toFixed(3)} Y:${d.dy.toFixed(3)} Z:${d.dz.toFixed(3)}`;
-                document.getElementById('pitch').textContent=d.pitch.toFixed(1)+'°';
-                document.getElementById('roll').textContent=d.roll.toFixed(1)+'°';
-                document.getElementById('yaw').textContent=d.yaw.toFixed(1)+'°';
-
-                // Update 3D orientation
-                group.rotation.x=THREE.MathUtils.degToRad(d.pitch);
-                group.rotation.y=THREE.MathUtils.degToRad(d.yaw);
-                group.rotation.z=THREE.MathUtils.degToRad(-d.roll);
-            }catch(e){}
-        });
+        
+        console.log('Setup complete, waiting for data...');
     </script>
 </body>
 </html>
