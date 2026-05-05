@@ -14,108 +14,207 @@
             color:#fff;
         }
         .dash{max-width:1000px;margin:0 auto}
-        .header{text-align:center;margin-bottom:12px}
-        .header h1{font-size:1.4em;color:#00d4ff;margin-bottom:3px}
+        .header{text-align:center;margin-bottom:10px}
+        .header h1{font-size:1.3em;color:#00d4ff;margin-bottom:3px}
         .status{font-size:0.7em;padding:2px 10px;border-radius:10px}
         .status.on{background:rgba(0,255,0,0.15);color:#0f0;animation:pulse 2s infinite}
         .status.off{background:rgba(255,0,0,0.15);color:#f44}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-        .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+        .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
         .card{
             background:linear-gradient(135deg,#1a1f2b,#222935);
             border:1px solid #2a3040;
-            border-radius:10px;
-            padding:10px;
+            border-radius:8px;
+            padding:8px;
         }
-        .card-title{color:#7a8a9a;font-size:0.65em;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-        .sensor-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
-        .mini-card{text-align:center;padding:5px}
+        .card-title{color:#7a8a9a;font-size:0.6em;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+        .sensor-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+        .mini-card{text-align:center;padding:4px}
         .mini-card .label{font-size:0.55em;color:#5a6a7a}
-        .mini-card .value{font-size:0.9em;color:#00d4ff;font-weight:bold}
+        .mini-card .value{font-size:0.85em;color:#00d4ff;font-weight:bold}
         .mini-card .unit{font-size:0.5em;color:#3a4a5a}
-        .dist-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
-        .dist-item{text-align:center}
-        .dist-item .dval{font-size:1.1em;color:#ffd700;font-weight:bold}
-        .dist-item .dlabel{font-size:0.55em;color:#5a6a7a}
+        
+        .info-row{display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding:2px 8px}
+        .info-label{font-size:0.55em;color:#5a6a7a}
+        .info-value{font-size:0.65em;color:#00d4ff;font-weight:bold}
+        
+        .dist-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+        .dist-box{text-align:center;padding:4px;background:rgba(255,215,0,0.05);border-radius:5px}
+        .dist-box .dlabel{font-size:0.5em;color:#6a7a8a;margin-bottom:2px}
+        .dist-box .dval{font-size:0.75em;color:#00d4ff;font-weight:bold}
+        .dist-box.total .dval{color:#ffd700}
+        
+        .angle-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px}
+        .angle-box{text-align:center;padding:4px;background:rgba(255,255,255,0.02);border-radius:5px}
+        .angle-box .alabel{font-size:0.5em;color:#6a7a8a;margin-bottom:2px}
+        .angle-box .aval{font-size:0.8em;font-weight:bold}
+        
         .canvas-container{
             background:linear-gradient(135deg,#1a1f2b,#222935);
             border:1px solid #2a3040;
-            border-radius:10px;
-            padding:8px;
+            border-radius:8px;
+            padding:0;
             display:flex;
             align-items:center;
             justify-content:center;
-            min-height:300px;
+            min-height:280px;
+            overflow:hidden;
         }
-        canvas{width:100%;height:100%}
-        .footer{text-align:center;color:#3a4a5a;font-size:0.6em;margin-top:8px}
+        canvas{width:100%;height:280px;display:block}
+        .footer{text-align:center;color:#3a4a5a;font-size:0.55em;margin-top:6px}
     </style>
 </head>
 <body>
     <div class="dash">
         <div class="header">
-            <h1>MPU9250 Kalman Filter Dashboard</h1>
+            <h1>MPU9250 Kalman Dashboard</h1>
             <span class="status off" id="st">● DISCONNECTED</span>
         </div>
+        
         <div class="main-grid">
+            <!-- Acceleration -->
             <div class="card">
-                <div class="card-title">Acceleration (m/s²)</div>
+                <div class="card-title">Acceleration</div>
                 <div class="sensor-grid">
                     <div class="mini-card"><div class="label">X</div><div class="value" id="ax">0.0000</div><div class="unit">m/s²</div></div>
                     <div class="mini-card"><div class="label">Y</div><div class="value" id="ay">0.0000</div><div class="unit">m/s²</div></div>
-                    <div class="mini-card"><div class="label">Z</div><div class="value" id="az">9.8100</div><div class="unit">m/s²</div></div>
+                    <div class="mini-card"><div class="label">Z</div><div class="value" id="az">0.0000</div><div class="unit">m/s²</div></div>
                 </div>
-                <div style="text-align:center;color:#ffd700;font-size:0.7em;margin-top:4px">Resultant: <span id="ra">0.0000</span> m/s²</div>
+                <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="ra">0.0000 m/s²</span></div>
             </div>
+            
+            <!-- Gyroscope -->
             <div class="card">
-                <div class="card-title">Gyroscope (°/s)</div>
+                <div class="card-title">Gyroscope</div>
                 <div class="sensor-grid">
                     <div class="mini-card"><div class="label">X</div><div class="value" id="gx">0.0000</div><div class="unit">°/s</div></div>
                     <div class="mini-card"><div class="label">Y</div><div class="value" id="gy">0.0000</div><div class="unit">°/s</div></div>
                     <div class="mini-card"><div class="label">Z</div><div class="value" id="gz">0.0000</div><div class="unit">°/s</div></div>
                 </div>
-                <div style="text-align:center;color:#ffd700;font-size:0.7em;margin-top:4px">Resultant: <span id="rg">0.0000</span> °/s</div>
+                <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="rg">0.0000 °/s</span></div>
             </div>
+            
+            <!-- Velocity -->
             <div class="card">
-                <div class="card-title">Velocity (m/s)</div>
+                <div class="card-title">Velocity</div>
                 <div class="sensor-grid">
-                    <div class="mini-card"><div class="label">Vx</div><div class="value" id="vx">0.0000</div></div>
-                    <div class="mini-card"><div class="label">Vy</div><div class="value" id="vy">0.0000</div></div>
-                    <div class="mini-card"><div class="label">Vz</div><div class="value" id="vz">0.0000</div></div>
+                    <div class="mini-card"><div class="label">X</div><div class="value" id="vx">0.0000</div><div class="unit">m/s</div></div>
+                    <div class="mini-card"><div class="label">Y</div><div class="value" id="vy">0.0000</div><div class="unit">m/s</div></div>
+                    <div class="mini-card"><div class="label">Z</div><div class="value" id="vz">0.0000</div><div class="unit">m/s</div></div>
                 </div>
-                <div style="text-align:center;color:#ffd700;font-size:0.7em;margin-top:4px">Resultant: <span id="rv">0.0000</span> m/s</div>
+                <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="rv">0.0000 m/s</span></div>
             </div>
+            
+            <!-- Distance + Angles -->
             <div class="card">
                 <div class="card-title">Distance Traveled</div>
-                <div class="dist-row">
-                    <div class="dist-item"><div class="dval" id="dist">0.0000</div><div class="dlabel">Total (m)</div></div>
-                    <div class="dist-item"><div class="dval" id="dist_xyz">X:0 Y:0 Z:0</div><div class="dlabel">Per Axis (m)</div></div>
+                <div class="dist-grid">
+                    <div class="dist-box total"><div class="dlabel">Total Distance</div><div class="dval" id="dist">0.0000 m</div></div>
+                    <div class="dist-box"><div class="dlabel">X Axis</div><div class="dval" id="dx">0.0000 m</div></div>
+                    <div class="dist-box"><div class="dlabel">Y Axis</div><div class="dval" id="dy">0.0000 m</div></div>
+                    <div class="dist-box"><div class="dlabel">Z Axis</div><div class="dval" id="dz">0.0000 m</div></div>
                 </div>
-                <div class="card-title" style="margin-top:8px">Orientation Angles</div>
-                <div class="sensor-grid">
-                    <div class="mini-card"><div class="label">Pitch</div><div class="value" id="pitch" style="color:#ff6b6b">0°</div></div>
-                    <div class="mini-card"><div class="label">Roll</div><div class="value" id="roll" style="color:#51cf66">0°</div></div>
-                    <div class="mini-card"><div class="label">Yaw</div><div class="value" id="yaw" style="color:#339af0">0°</div></div>
+                <div class="card-title" style="margin-top:8px">Orientation</div>
+                <div class="angle-grid">
+                    <div class="angle-box"><div class="alabel">Pitch</div><div class="aval" id="pitch" style="color:#ff6b6b">0.0°</div></div>
+                    <div class="angle-box"><div class="alabel">Roll</div><div class="aval" id="roll" style="color:#51cf66">0.0°</div></div>
+                    <div class="angle-box"><div class="alabel">Yaw</div><div class="aval" id="yaw" style="color:#339af0">0.0°</div></div>
                 </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-title">3D Orientation</div>
-            <div class="canvas-container">
-                <canvas id="canvas3d"></canvas>
-            </div>
+        
+        <!-- 3D Model -->
+        <div class="canvas-container">
+            <canvas id="canvas3d"></canvas>
         </div>
+        
         <div class="footer">ESP32 → Kalman Filter → HiveMQ → Vercel</div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script>
-        console.log('Starting MQTT connection...');
+        // Three.js Setup
+        const canvas = document.getElementById('canvas3d');
+        const container = canvas.parentElement;
         
-        const brokerUrl = 'wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt';
+        const renderer = new THREE.WebGLRenderer({canvas: canvas, alpha: true, antialias: true});
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(container.clientWidth, 280);
         
-        const client = mqtt.connect(brokerUrl, {
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / 280, 0.1, 100);
+        camera.position.set(2.5, 2, 4);
+        camera.lookAt(0, 0, 0);
+        
+        scene.add(new THREE.AmbientLight(0x505070, 0.8));
+        const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        light1.position.set(3, 4, 3);
+        scene.add(light1);
+        const light2 = new THREE.DirectionalLight(0x4488cc, 0.4);
+        light2.position.set(-2, 1, -2);
+        scene.add(light2);
+        
+        const group = new THREE.Group();
+        
+        // Main body
+        const bodyGeo = new THREE.BoxGeometry(1, 0.12, 0.5);
+        const bodyMat = new THREE.MeshPhongMaterial({color: 0x00d4ff, specular: 0x333333, shininess: 40});
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        group.add(body);
+        
+        // Top detail
+        const topGeo = new THREE.BoxGeometry(0.4, 0.06, 0.3);
+        const topMat = new THREE.MeshPhongMaterial({color: 0x0088cc, specular: 0x222222, shininess: 30});
+        const top = new THREE.Mesh(topGeo, topMat);
+        top.position.y = 0.09;
+        group.add(top);
+        
+        // Arms
+        const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.1, 8);
+        const armMat = new THREE.MeshPhongMaterial({color: 0x667788, specular: 0x111111, shininess: 20});
+        
+        const armX = new THREE.Mesh(armGeo, armMat);
+        armX.rotation.z = Math.PI / 2;
+        group.add(armX);
+        
+        const armY = new THREE.Mesh(armGeo, armMat);
+        armY.rotation.x = Math.PI / 2;
+        group.add(armY);
+        
+        // Front indicator
+        const arrowGeo = new THREE.ConeGeometry(0.08, 0.3, 8);
+        const arrowMat = new THREE.MeshPhongMaterial({color: 0xff4444, emissive: 0x330000});
+        const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+        arrow.position.set(0.55, 0, 0);
+        arrow.rotation.z = -Math.PI / 2;
+        group.add(arrow);
+        
+        scene.add(group);
+        
+        // Grid
+        const gridHelper = new THREE.GridHelper(4, 20, 0x2a3040, 0x151a24);
+        scene.add(gridHelper);
+        
+        // Axes
+        const axesHelper = new THREE.AxesHelper(1.5);
+        scene.add(axesHelper);
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        window.addEventListener('resize', () => {
+            const w = container.clientWidth;
+            renderer.setSize(w, 280);
+            camera.aspect = w / 280;
+            camera.updateProjectionMatrix();
+        });
+
+        // MQTT Connection
+        const client = mqtt.connect('wss://2ee891c830dc45a681af9ac25a765978.s1.eu.hivemq.cloud:8884/mqtt', {
             username: 'MPU9060',
             password: 'Mpu6090mpu',
             clean: true,
@@ -124,23 +223,15 @@
             clientId: 'web_' + Math.random().toString(16).substr(2, 8)
         });
         
-        client.on('connect', function() {
-            console.log('Connected to HiveMQ!');
+        client.on('connect', () => {
             document.getElementById('st').textContent = '● CONNECTED';
             document.getElementById('st').className = 'status on';
-            client.subscribe('mpu9250/sensor', function(err) {
-                if (!err) {
-                    console.log('Subscribed to mpu9250/sensor');
-                } else {
-                    console.error('Subscribe error:', err);
-                }
-            });
+            client.subscribe('mpu9250/sensor');
         });
         
-        client.on('message', function(topic, message) {
+        client.on('message', (topic, message) => {
             try {
                 const d = JSON.parse(message.toString());
-                console.log('Data received:', d);
                 
                 document.getElementById('ax').textContent = d.ax.toFixed(4);
                 document.getElementById('ay').textContent = d.ay.toFixed(4);
@@ -148,102 +239,36 @@
                 document.getElementById('gx').textContent = d.gx.toFixed(4);
                 document.getElementById('gy').textContent = d.gy.toFixed(4);
                 document.getElementById('gz').textContent = d.gz.toFixed(4);
-                document.getElementById('ra').textContent = d.res_accel.toFixed(4);
-                document.getElementById('rg').textContent = d.res_gyro.toFixed(4);
+                document.getElementById('ra').textContent = d.res_accel.toFixed(4) + ' m/s²';
+                document.getElementById('rg').textContent = d.res_gyro.toFixed(4) + ' °/s';
                 document.getElementById('vx').textContent = d.vx.toFixed(4);
                 document.getElementById('vy').textContent = d.vy.toFixed(4);
                 document.getElementById('vz').textContent = d.vz.toFixed(4);
-                document.getElementById('rv').textContent = d.res_vel.toFixed(4);
-                document.getElementById('dist').textContent = d.dist.toFixed(4);
-                document.getElementById('dist_xyz').textContent = 'X:' + d.dx.toFixed(3) + ' Y:' + d.dy.toFixed(3) + ' Z:' + d.dz.toFixed(3);
+                document.getElementById('rv').textContent = d.res_vel.toFixed(4) + ' m/s';
+                document.getElementById('dist').textContent = d.dist.toFixed(4) + ' m';
+                document.getElementById('dx').textContent = d.dx.toFixed(4) + ' m';
+                document.getElementById('dy').textContent = d.dy.toFixed(4) + ' m';
+                document.getElementById('dz').textContent = d.dz.toFixed(4) + ' m';
                 document.getElementById('pitch').textContent = d.pitch.toFixed(1) + '°';
                 document.getElementById('roll').textContent = d.roll.toFixed(1) + '°';
                 document.getElementById('yaw').textContent = d.yaw.toFixed(1) + '°';
                 
-                // Update 3D
-                if (typeof THREE !== 'undefined' && typeof group !== 'undefined') {
-                    group.rotation.x = THREE.MathUtils.degToRad(d.pitch);
-                    group.rotation.y = THREE.MathUtils.degToRad(d.yaw);
-                    group.rotation.z = THREE.MathUtils.degToRad(-d.roll);
-                }
-            } catch(e) {
-                console.error('Parse error:', e);
-            }
+                // Update 3D orientation
+                group.rotation.x = THREE.MathUtils.degToRad(-d.pitch);
+                group.rotation.y = THREE.MathUtils.degToRad(-d.yaw);
+                group.rotation.z = THREE.MathUtils.degToRad(d.roll);
+            } catch(e) {}
         });
         
-        client.on('error', function(err) {
-            console.error('MQTT Error:', err);
+        client.on('error', () => {
             document.getElementById('st').textContent = '● ERROR';
             document.getElementById('st').className = 'status off';
         });
         
-        client.on('close', function() {
-            console.log('MQTT Disconnected');
+        client.on('close', () => {
             document.getElementById('st').textContent = '● DISCONNECTED';
             document.getElementById('st').className = 'status off';
         });
-        
-        client.on('reconnect', function() {
-            console.log('Reconnecting...');
-            document.getElementById('st').textContent = '● RECONNECTING';
-            document.getElementById('st').className = 'status off';
-        });
-        
-        // Three.js Setup
-        console.log('Setting up 3D scene...');
-        const canvas = document.getElementById('canvas3d');
-        const renderer = new THREE.WebGLRenderer({canvas: canvas, alpha: true, antialias: true});
-        renderer.setSize(canvas.parentElement.clientWidth, 280);
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, canvas.parentElement.clientWidth / 280, 0.1, 100);
-        camera.position.set(3, 3, 5);
-        camera.lookAt(0, 0, 0);
-        
-        scene.add(new THREE.AmbientLight(0x404060, 1));
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 5, 5);
-        scene.add(light);
-        
-        const group = new THREE.Group();
-        
-        const body = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 0.15, 0.6),
-            new THREE.MeshPhongMaterial({color: 0x00d4ff, specular: 0x111111, shininess: 30})
-        );
-        group.add(body);
-        
-        const armGeo = new THREE.BoxGeometry(0.1, 0.05, 1.2);
-        const armMat = new THREE.MeshPhongMaterial({color: 0x0088cc, specular: 0x111111, shininess: 30});
-        const arm1 = new THREE.Mesh(armGeo, armMat); group.add(arm1);
-        const arm2 = new THREE.Mesh(armGeo, armMat); arm2.rotation.y = Math.PI/2; group.add(arm2);
-        
-        const arrow = new THREE.Mesh(
-            new THREE.ConeGeometry(0.1, 0.4, 8),
-            new THREE.MeshPhongMaterial({color: 0xff4444})
-        );
-        arrow.position.set(0.6, 0, 0);
-        arrow.rotation.z = -Math.PI/2;
-        group.add(arrow);
-        
-        scene.add(group);
-        
-        const grid = new THREE.GridHelper(5, 20, 0x2a3040, 0x1a1f2b);
-        scene.add(grid);
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-        animate();
-        
-        window.addEventListener('resize', function() {
-            const w = canvas.parentElement.clientWidth;
-            renderer.setSize(w, 280);
-            camera.aspect = w / 280;
-            camera.updateProjectionMatrix();
-        });
-        
-        console.log('Setup complete, waiting for data...');
     </script>
 </body>
 </html>
