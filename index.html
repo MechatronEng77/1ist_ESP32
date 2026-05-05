@@ -72,7 +72,6 @@
         </div>
         
         <div class="main-grid">
-            <!-- Acceleration -->
             <div class="card">
                 <div class="card-title">Acceleration</div>
                 <div class="sensor-grid">
@@ -83,7 +82,6 @@
                 <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="ra">0.0000 m/s²</span></div>
             </div>
             
-            <!-- Gyroscope -->
             <div class="card">
                 <div class="card-title">Gyroscope</div>
                 <div class="sensor-grid">
@@ -94,7 +92,6 @@
                 <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="rg">0.0000 °/s</span></div>
             </div>
             
-            <!-- Velocity -->
             <div class="card">
                 <div class="card-title">Velocity</div>
                 <div class="sensor-grid">
@@ -105,7 +102,6 @@
                 <div class="info-row"><span class="info-label">Resultant</span><span class="info-value" id="rv">0.0000 m/s</span></div>
             </div>
             
-            <!-- Distance + Angles -->
             <div class="card">
                 <div class="card-title">Distance Traveled</div>
                 <div class="dist-grid">
@@ -123,7 +119,6 @@
             </div>
         </div>
         
-        <!-- 3D Model -->
         <div class="canvas-container">
             <canvas id="canvas3d"></canvas>
         </div>
@@ -230,34 +225,48 @@
         });
         
         client.on('message', (topic, message) => {
+            const rawData = message.toString();
+            console.log("Data received from ESP32:", rawData); 
+        
             try {
-                const d = JSON.parse(message.toString());
+                const d = JSON.parse(rawData);
                 
-                document.getElementById('ax').textContent = d.ax.toFixed(4);
-                document.getElementById('ay').textContent = d.ay.toFixed(4);
-                document.getElementById('az').textContent = d.az.toFixed(4);
-                document.getElementById('gx').textContent = d.gx.toFixed(4);
-                document.getElementById('gy').textContent = d.gy.toFixed(4);
-                document.getElementById('gz').textContent = d.gz.toFixed(4);
-                document.getElementById('ra').textContent = d.res_accel.toFixed(4) + ' m/s²';
-                document.getElementById('rg').textContent = d.res_gyro.toFixed(4) + ' °/s';
-                document.getElementById('vx').textContent = d.vx.toFixed(4);
-                document.getElementById('vy').textContent = d.vy.toFixed(4);
-                document.getElementById('vz').textContent = d.vz.toFixed(4);
-                document.getElementById('rv').textContent = d.res_vel.toFixed(4) + ' m/s';
-                document.getElementById('dist').textContent = d.dist.toFixed(4) + ' m';
-                document.getElementById('dx').textContent = d.dx.toFixed(4) + ' m';
-                document.getElementById('dy').textContent = d.dy.toFixed(4) + ' m';
-                document.getElementById('dz').textContent = d.dz.toFixed(4) + ' m';
-                document.getElementById('pitch').textContent = d.pitch.toFixed(1) + '°';
-                document.getElementById('roll').textContent = d.roll.toFixed(1) + '°';
-                document.getElementById('yaw').textContent = d.yaw.toFixed(1) + '°';
+                const updateValue = (id, value, suffix = '') => {
+                    if (value !== undefined && value !== null) {
+                        document.getElementById(id).textContent = Number(value).toFixed(4) + suffix;
+                    }
+                };
+        
+                updateValue('ax', d.ax);
+                updateValue('ay', d.ay);
+                updateValue('az', d.az);
+                updateValue('gx', d.gx);
+                updateValue('gy', d.gy);
+                updateValue('gz', d.gz);
+                updateValue('ra', d.res_accel, ' m/s²');
+                updateValue('rg', d.res_gyro, ' °/s');
+                updateValue('vx', d.vx);
+                updateValue('vy', d.vy);
+                updateValue('vz', d.vz);
+                updateValue('rv', d.res_vel, ' m/s');
+                updateValue('dist', d.dist, ' m');
+                updateValue('dx', d.dx, ' m');
+                updateValue('dy', d.dy, ' m');
+                updateValue('dz', d.dz, ' m');
                 
-                // Update 3D orientation
-                group.rotation.x = THREE.MathUtils.degToRad(-d.pitch);
-                group.rotation.y = THREE.MathUtils.degToRad(-d.yaw);
-                group.rotation.z = THREE.MathUtils.degToRad(d.roll);
-            } catch(e) {}
+                if (d.pitch !== undefined) document.getElementById('pitch').textContent = Number(d.pitch).toFixed(1) + '°';
+                if (d.roll !== undefined) document.getElementById('roll').textContent = Number(d.roll).toFixed(1) + '°';
+                if (d.yaw !== undefined) document.getElementById('yaw').textContent = Number(d.yaw).toFixed(1) + '°';
+                
+                if (d.pitch !== undefined && d.yaw !== undefined && d.roll !== undefined) {
+                    group.rotation.x = THREE.MathUtils.degToRad(-d.pitch);
+                    group.rotation.y = THREE.MathUtils.degToRad(-d.yaw);
+                    group.rotation.z = THREE.MathUtils.degToRad(d.roll);
+                }
+        
+            } catch(error) {
+                console.error("Failed to parse the data from ESP32. Received:", rawData);
+            }
         });
         
         client.on('error', () => {
